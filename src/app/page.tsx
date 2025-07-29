@@ -16,48 +16,50 @@ export default function Home() {
 
   // Load projects from localStorage on mount
   useEffect(() => {
-    const savedProjects = localStorage.getItem('ai-html-projects')
-    if (savedProjects) {
-      try {
-        const parsed = JSON.parse(savedProjects)
-        const loadedProjects = parsed.map((p: any) => ({
-          ...p,
-          createdAt: new Date(p.createdAt),
-          updatedAt: new Date(p.updatedAt)
-        }))
-        setProjects(loadedProjects)
+    if (typeof window !== 'undefined') {
+      const savedProjects = localStorage.getItem('ai-html-projects')
+      if (savedProjects) {
+        try {
+          const parsed = JSON.parse(savedProjects)
+          const loadedProjects = parsed.map((p: Project) => ({
+            ...p,
+            createdAt: new Date(p.createdAt),
+            updatedAt: new Date(p.updatedAt)
+          }))
+          setProjects(loadedProjects)
 
-        // Check for selected project from projects page
-        const selectedProjectData = localStorage.getItem('selected-project')
-        if (selectedProjectData) {
-          try {
-            const selectedProj = JSON.parse(selectedProjectData)
-            const foundProject = loadedProjects.find((p: Project) => p.id === selectedProj.id)
-            if (foundProject) {
-              setSelectedProject(foundProject)
-              setMessages([
-                {
-                  id: generateId(),
-                  type: 'assistant',
-                  content: `Loaded project: ${foundProject.filename}`,
-                  timestamp: new Date()
-                }
-              ])
+          // Check for selected project from projects page
+          const selectedProjectData = localStorage.getItem('selected-project')
+          if (selectedProjectData) {
+            try {
+              const selectedProj = JSON.parse(selectedProjectData)
+              const foundProject = loadedProjects.find((p: Project) => p.id === selectedProj.id)
+              if (foundProject) {
+                setSelectedProject(foundProject)
+                setMessages([
+                  {
+                    id: generateId(),
+                    type: 'assistant',
+                    content: `Loaded project: ${foundProject.filename}`,
+                    timestamp: new Date()
+                  }
+                ])
+              }
+              localStorage.removeItem('selected-project') // Clean up
+            } catch (error) {
+              console.error('Failed to load selected project:', error)
             }
-            localStorage.removeItem('selected-project') // Clean up
-          } catch (error) {
-            console.error('Failed to load selected project:', error)
           }
+        } catch (error) {
+          console.error('Failed to load projects:', error)
         }
-      } catch (error) {
-        console.error('Failed to load projects:', error)
       }
     }
   }, [])
 
   // Save projects to localStorage when projects change
   useEffect(() => {
-    if (projects.length > 0) {
+    if (typeof window !== 'undefined' && projects.length > 0) {
       localStorage.setItem('ai-html-projects', JSON.stringify(projects))
     }
   }, [projects])

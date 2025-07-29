@@ -29,7 +29,7 @@ export function ChatInput({
   className 
 }: ChatInputProps) {
   const [message, setMessage] = useState("")
-  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [, setShowSuggestions] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const handleSubmit = () => {

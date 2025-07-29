@@ -13,7 +13,7 @@ const groq = new Groq({
 export interface AIResponse {
   filename: string;
   htmlContent: string;
-  aiResponse: any;
+  aiResponse: unknown;
 }
 
 export async function generateHTMLWithFilename(userRequest: string): Promise<AIResponse> {

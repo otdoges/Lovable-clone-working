@@ -11,7 +11,6 @@ import {
   Download, 
   Trash2, 
   Eye, 
-  Code, 
   Calendar,
   FileText,
   FolderOpen,
@@ -31,24 +30,26 @@ export default function ProjectsPage() {
 
   // Load projects from localStorage
   useEffect(() => {
-    const savedProjects = localStorage.getItem('ai-html-projects')
-    if (savedProjects) {
-      try {
-        const parsed = JSON.parse(savedProjects)
-        setProjects(parsed.map((p: any) => ({
-          ...p,
-          createdAt: new Date(p.createdAt),
-          updatedAt: new Date(p.updatedAt)
-        })))
-      } catch (error) {
-        console.error('Failed to load projects:', error)
+    if (typeof window !== 'undefined') {
+      const savedProjects = localStorage.getItem('ai-html-projects')
+      if (savedProjects) {
+        try {
+          const parsed = JSON.parse(savedProjects)
+          setProjects(parsed.map((p: Project) => ({
+            ...p,
+            createdAt: new Date(p.createdAt),
+            updatedAt: new Date(p.updatedAt)
+          })))
+        } catch (error) {
+          console.error('Failed to load projects:', error)
+        }
       }
     }
   }, [])
 
   // Save projects to localStorage when projects change
   useEffect(() => {
-    if (projects.length > 0) {
+    if (typeof window !== 'undefined' && projects.length > 0) {
       localStorage.setItem('ai-html-projects', JSON.stringify(projects))
     }
   }, [projects])
@@ -135,7 +136,9 @@ export default function ProjectsPage() {
 
   const openProject = (project: Project) => {
     // Store the selected project in localStorage for the main page
-    localStorage.setItem('selected-project', JSON.stringify(project))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selected-project', JSON.stringify(project))
+    }
     router.push('/')
   }
 

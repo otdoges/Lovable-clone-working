@@ -2,14 +2,14 @@
 
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { Sparkles, Github, Settings } from "lucide-react"
+import { Sparkles, Github } from "lucide-react"
 
 interface HeaderProps {
   onNewProject?: () => void
   onOpenSettings?: () => void
 }
 
-export function Header({ onNewProject, onOpenSettings }: HeaderProps) {
+export function Header({ onNewProject }: HeaderProps) {
   return (
     <header className="border-b border-[var(--border)] bg-[var(--background)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--background)]/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">

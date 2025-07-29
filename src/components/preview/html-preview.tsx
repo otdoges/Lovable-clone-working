@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Project } from "@/types"
 import { 
@@ -40,7 +40,7 @@ export function HTMLPreview({ project, className }: HTMLPreviewProps) {
   const codeRef = useRef<HTMLPreElement>(null)
 
   // Create blob URL for iframe
-  const createPreviewUrl = () => {
+  const createPreviewUrl = useCallback(() => {
     try {
       const blob = new Blob([project.htmlContent], { type: 'text/html' })
       return URL.createObjectURL(blob)
@@ -49,7 +49,7 @@ export function HTMLPreview({ project, className }: HTMLPreviewProps) {
       setPreviewError('Failed to create preview')
       return null
     }
-  }
+  }, [project.htmlContent])
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
@@ -64,14 +64,13 @@ export function HTMLPreview({ project, className }: HTMLPreviewProps) {
         URL.revokeObjectURL(url)
       }
     }
-  }, [project.htmlContent])
+  }, [project.htmlContent, createPreviewUrl])
 
   const handleDownload = () => {
     try {
       downloadFile(project.htmlContent, `${project.filename}.html`, 'text/html')
       toast.success(`Downloaded ${project.filename}.html`)
-    } catch (error) {
-      console.error('Download failed:', error)
+    } catch {
       toast.error('Failed to download file')
     }
   }
@@ -103,7 +102,7 @@ export function HTMLPreview({ project, className }: HTMLPreviewProps) {
     try {
       await navigator.clipboard.writeText(project.htmlContent)
       toast.success('Code copied to clipboard')
-    } catch (error) {
+    } catch {
       toast.error('Failed to copy code')
     }
   }

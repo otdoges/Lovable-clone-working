@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useRef } from "react"
 import { ChatMessage } from "./message"
 import { ChatInput } from "./chat-input"
 import { LoadingDots } from "@/components/ui/loading-spinner"
@@ -129,7 +129,7 @@ export function ChatInterface({
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Start Creating</h3>
                 <p className="text-[var(--muted-foreground)]">
-                  Describe the HTML page you want to create and I'll generate it for you instantly.
+                  Describe the HTML page you want to create and I&apos;ll generate it for you instantly.
                 </p>
               </div>
               <div className="text-xs text-[var(--muted-foreground)] space-y-1">

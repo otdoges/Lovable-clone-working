@@ -24,8 +24,11 @@ export function ThemeToggle() {
       return <Moon className="h-4 w-4" />
     } else {
       // System theme - check current preference
-      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-      return isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />
+      if (typeof window !== 'undefined') {
+        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+        return isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />
+      }
+      return <Sun className="h-4 w-4" />
     }
   }
 

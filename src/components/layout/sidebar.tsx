@@ -4,10 +4,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { 
-  MessageSquare, 
   FolderOpen, 
   Code, 
-  Eye, 
   Download,
   Trash2,
   ChevronLeft,

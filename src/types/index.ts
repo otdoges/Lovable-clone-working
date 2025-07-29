@@ -17,7 +17,7 @@ export interface Project {
 export interface AIResponse {
   filename: string
   htmlContent: string
-  aiResponse: any
+  aiResponse: unknown
 }
 
 export interface ChatState {
