@@ -1,103 +1,182 @@
-import Image from "next/image";
+"use client"
+
+import { useState, useEffect } from "react"
+import { Header } from "@/components/layout/header"
+import { Sidebar } from "@/components/layout/sidebar"
+import { ChatInterface } from "@/components/chat/chat-interface"
+import { HTMLPreview } from "@/components/preview/html-preview"
+import { Project, Message } from "@/types"
+import { generateId } from "@/lib/utils"
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [projects, setProjects] = useState<Project[]>([])
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  // Load projects from localStorage on mount
+  useEffect(() => {
+    const savedProjects = localStorage.getItem('ai-html-projects')
+    if (savedProjects) {
+      try {
+        const parsed = JSON.parse(savedProjects)
+        const loadedProjects = parsed.map((p: any) => ({
+          ...p,
+          createdAt: new Date(p.createdAt),
+          updatedAt: new Date(p.updatedAt)
+        }))
+        setProjects(loadedProjects)
+
+        // Check for selected project from projects page
+        const selectedProjectData = localStorage.getItem('selected-project')
+        if (selectedProjectData) {
+          try {
+            const selectedProj = JSON.parse(selectedProjectData)
+            const foundProject = loadedProjects.find((p: Project) => p.id === selectedProj.id)
+            if (foundProject) {
+              setSelectedProject(foundProject)
+              setMessages([
+                {
+                  id: generateId(),
+                  type: 'assistant',
+                  content: `Loaded project: ${foundProject.filename}`,
+                  timestamp: new Date()
+                }
+              ])
+            }
+            localStorage.removeItem('selected-project') // Clean up
+          } catch (error) {
+            console.error('Failed to load selected project:', error)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load projects:', error)
+      }
+    }
+  }, [])
+
+  // Save projects to localStorage when projects change
+  useEffect(() => {
+    if (projects.length > 0) {
+      localStorage.setItem('ai-html-projects', JSON.stringify(projects))
+    }
+  }, [projects])
+
+  const handleNewProject = () => {
+    setSelectedProject(null)
+    setMessages([])
+  }
+
+  const handleSelectProject = (project: Project) => {
+    setSelectedProject(project)
+    // Load messages for this project (for now, just show a welcome message)
+    setMessages([
+      {
+        id: generateId(),
+        type: 'assistant',
+        content: `Loaded project: ${project.filename}`,
+        timestamp: new Date()
+      }
+    ])
+  }
+
+  const handleDeleteProject = (projectId: string) => {
+    setProjects(prev => prev.filter(p => p.id !== projectId))
+    if (selectedProject?.id === projectId) {
+      setSelectedProject(null)
+      setMessages([])
+    }
+  }
+
+  const handleProjectGenerated = (project: Project) => {
+    setProjects(prev => [...prev, project])
+    setSelectedProject(project)
+  }
+
+  return (
+    <div className="h-screen flex flex-col bg-[var(--background)]">
+      <Header 
+        onNewProject={handleNewProject}
+        onOpenSettings={() => {}}
+      />
+      
+      <div className="flex-1 flex overflow-hidden">
+        <Sidebar
+          projects={projects}
+          onSelectProject={handleSelectProject}
+          onDeleteProject={handleDeleteProject}
+          selectedProjectId={selectedProject?.id}
+        />
+        
+        <main className="flex-1 flex">
+          {/* Chat Interface */}
+          <div className="flex-1 border-r border-[var(--border)]">
+            <ChatInterface
+              messages={messages}
+              onMessagesChange={setMessages}
+              onProjectGenerated={handleProjectGenerated}
+              isLoading={isLoading}
+              onLoadingChange={setIsLoading}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          </div>
+          
+          {/* Preview Panel */}
+          <div className="flex-1">
+            {selectedProject ? (
+              <HTMLPreview project={selectedProject} />
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <div className="max-w-md text-center space-y-8">
+                  <div className="space-y-4">
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                      Build something Lovable
+                    </h2>
+                    <p className="text-lg text-[var(--muted-foreground)]">
+                      Create beautiful HTML pages by chatting with AI
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 hover:bg-[var(--muted)]/50 transition-colors cursor-pointer text-sm">
+                      <h4 className="font-medium mb-1">Landing Page</h4>
+                      <p className="text-xs text-[var(--muted-foreground)]">
+                        Business landing page
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 hover:bg-[var(--muted)]/50 transition-colors cursor-pointer text-sm">
+                      <h4 className="font-medium mb-1">Portfolio</h4>
+                      <p className="text-xs text-[var(--muted-foreground)]">
+                        Showcase your work
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 hover:bg-[var(--muted)]/50 transition-colors cursor-pointer text-sm">
+                      <h4 className="font-medium mb-1">Dashboard</h4>
+                      <p className="text-xs text-[var(--muted-foreground)]">
+                        Admin dashboard
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 hover:bg-[var(--muted)]/50 transition-colors cursor-pointer text-sm">
+                      <h4 className="font-medium mb-1">Blog</h4>
+                      <p className="text-xs text-[var(--muted-foreground)]">
+                        Blog layout
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      💡 Start a conversation to create your first project
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
-  );
+  )
 }
