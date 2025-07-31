@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ChatMessage } from "./message"
 import { ChatInput } from "./chat-input"
-import { LoadingDots } from "@/components/ui/loading-spinner"
+import { TypingIndicator, LoadingStates } from "./typing-indicator"
 import { Message, Project } from "@/types"
 import { generateId } from "@/lib/utils"
 import { ChatService } from "@/lib/chat-service"
@@ -28,11 +28,43 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const loadingStates = LoadingStates()
+  const [currentLoadingState, setCurrentLoadingState] = useState<keyof typeof loadingStates>('thinking')
+  const [loadingProgress, setLoadingProgress] = useState(0)
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  // Simulate realistic loading states
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadingProgress(0)
+      setCurrentLoadingState('thinking')
+      return
+    }
+
+    const states: (keyof typeof loadingStates)[] = ['thinking', 'generating', 'styling', 'optimizing', 'finalizing']
+    let currentStateIndex = 0
+    let progress = 0
+
+    const interval = setInterval(() => {
+      progress += Math.random() * 15 + 5
+      
+      if (progress >= 100) {
+        progress = 100
+        clearInterval(interval)
+      } else if (progress > (currentStateIndex + 1) * 20 && currentStateIndex < states.length - 1) {
+        currentStateIndex++
+        setCurrentLoadingState(states[currentStateIndex])
+      }
+      
+      setLoadingProgress(progress)
+    }, 800)
+
+    return () => clearInterval(interval)
+  }, [isLoading, loadingStates])
 
   const handleSendMessage = async (content: string) => {
     const userMessage: Message = {
@@ -112,12 +144,55 @@ export function ChatInterface({
     }
   }
 
+  const handleEditMessage = (messageId: string, newContent: string) => {
+    const updatedMessages = messages.map(msg => 
+      msg.id === messageId ? { ...msg, content: newContent } : msg
+    )
+    onMessagesChange(updatedMessages)
+    
+    // If it was a user message, regenerate response
+    const editedMessage = messages.find(m => m.id === messageId)
+    if (editedMessage?.type === 'user') {
+      // Remove all messages after the edited one
+      const messageIndex = messages.findIndex(m => m.id === messageId)
+      const messagesUpToEdit = updatedMessages.slice(0, messageIndex + 1)
+      onMessagesChange(messagesUpToEdit)
+      
+      // Regenerate response
+      handleSendMessage(newContent)
+    }
+  }
+
+  const handleRegenerateMessage = (messageId: string) => {
+    const messageIndex = messages.findIndex(m => m.id === messageId)
+    if (messageIndex > 0) {
+      // Find the user message that prompted this response
+      const userMessage = messages[messageIndex - 1]
+      if (userMessage?.type === 'user') {
+        // Remove the AI response and regenerate
+        const messagesUpToUserMessage = messages.slice(0, messageIndex)
+        onMessagesChange(messagesUpToUserMessage)
+        handleSendMessage(userMessage.content)
+      }
+    }
+  }
+
+  const handleMessageFeedback = (messageId: string, feedback: 'positive' | 'negative') => {
+    // Store feedback (could be sent to analytics later)
+    console.log(`Message ${messageId} received ${feedback} feedback`)
+    toast.success(`Thank you for your feedback!`)
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Chat Messages */}
       <div 
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+        role="log"
+        aria-label="Chat conversation"
+        aria-live="polite"
+        aria-atomic="false"
       >
         {messages.length === 0 ? (
           // Empty state
@@ -142,26 +217,23 @@ export function ChatInterface({
         ) : (
           // Messages list
           <div className="space-y-1 group">
-            {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+            {messages.map((message, index) => (
+              <ChatMessage 
+                key={message.id} 
+                message={message}
+                onEdit={handleEditMessage}
+                onRegenerate={handleRegenerateMessage}
+                onFeedback={handleMessageFeedback}
+                isLast={index === messages.length - 1}
+              />
             ))}
             
-            {/* Loading indicator */}
+            {/* Enhanced Loading indicator */}
             {isLoading && (
-              <div className="flex gap-4 p-4 bg-[var(--muted)]/30 animate-slide-in-up">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white animate-pulse-gentle" />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">AI Assistant</span>
-                    <LoadingDots className="scale-75" />
-                  </div>
-                  <div className="text-sm text-[var(--muted-foreground)]">
-                    Generating your HTML page...
-                  </div>
-                </div>
-              </div>
+              <TypingIndicator 
+                message={loadingStates[currentLoadingState]}
+                progress={loadingProgress}
+              />
             )}
             
             <div ref={messagesEndRef} />
